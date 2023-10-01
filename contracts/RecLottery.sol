@@ -35,7 +35,6 @@ contract RecLottery {
     }
 
     function buy() payable public {
-        
         require(msg.value % TICKET_PRICE == 0, "Amount is not a multiple of ticket price");
 
         // if previous round is ended , create a new one
@@ -49,6 +48,34 @@ contract RecLottery {
         Entry memory entry = Entry(msg.sender, quantity);
         rounds[round].entries.push(entry);
         rounds[round].totalQuantity += quantity;
+
+    }
+
+    function drawWinner (uint256 roundNumber) public {
+        Round storage drawing = rounds[roundNumber];
+        require(drawing.winner == address(0), "Round already drawn");
+        require(block.number > drawing.drawBlock && drawing.drawBlock > 0, "Round not ended");
+        require(drawing.entries.length > 0, "No participants");
+
+        // PICK A RANDOM NUMBER VIA CHAINLINK VRF
+        uint256 randomNumber = 4; // TO BE REPLACED
+
+        // PICK THE WINNER
+        uint256 winnerIndex = randomNumber % drawing.totalQuantity;
+
+        for (uint256 i = 0; i < drawing.entries.length; i++) {
+            uint256 quantity = drawing.entries[i].quantity;
+            if (quantity > winnerIndex) {
+                drawing.winner = drawing.entries[i].buyer;
+                break;
+            } else {
+                winnerIndex -= quantity;
+            }
+        }
+
+        balances[drawing.winner] += TICKET_PRICE * drawing.totalQuantity; 
+
+        
 
     }
 
