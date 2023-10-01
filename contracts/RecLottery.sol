@@ -75,8 +75,22 @@ contract RecLottery {
 
         balances[drawing.winner] += TICKET_PRICE * drawing.totalQuantity; 
 
-        
+    }
 
+    function withdraw() public {
+        uint256 amount = balances[msg.sender];
+        balances[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
+
+    function getEntries(uint256 roundNumber) public view returns (Entry[] memory) {
+        return rounds[roundNumber].entries;
+    }
+
+    function deleteRound(uint256 roundNumber) public {
+        require(block.number > rounds[roundNumber].drawBlock + 100, "Round not ended");
+        require(rounds[roundNumber].winner != address(0), "Round not drawn");
+        delete rounds[roundNumber];
     }
 
 
