@@ -35,12 +35,21 @@ contract RecLottery {
     }
 
     function buy() payable public {
-        // check if rounds has ended
-        require(block.number < rounds[round].endBlock, "Round has ended");
+        
         require(msg.value % TICKET_PRICE == 0, "Amount is not a multiple of ticket price");
 
-        // update round data
-        
+        // if previous round is ended , create a new one
+        if (block.number > rounds[round].endBlock) {
+            round++;
+            rounds[round].endBlock = block.number + duration;
+            rounds[round].drawBlock = block.number + duration + 5;
+        }
+
+        uint256 quantity = msg.value / TICKET_PRICE;
+        Entry memory entry = Entry(msg.sender, quantity);
+        rounds[round].entries.push(entry);
+        rounds[round].totalQuantity += quantity;
+
     }
 
 
