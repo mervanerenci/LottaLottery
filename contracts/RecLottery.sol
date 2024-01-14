@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 contract RecLottery {
-
     //round struct
 
     struct Round {
@@ -19,12 +18,14 @@ contract RecLottery {
         uint256 quantity;
     }
 
-    uint256 constant public TICKET_PRICE = 1e15;
+    uint256 public constant TICKET_PRICE = 1e15;
 
     mapping(uint256 => Round) public rounds;
     uint256 public round;
     uint256 public duration;
     mapping(address => uint256) public balances;
+    mapping(uint256 => mapping(address => uint256)) public ticketsBoughtPerRound;
+    uint256 public current_block;
 
     //duration is in blocks. 1 day = ~40000 blocks in Polygon
     constructor(uint256 _duration) {
@@ -34,14 +35,18 @@ contract RecLottery {
         rounds[round].drawBlock = block.number + duration + 5;
     }
 
-    function buy() payable public {
-        require(msg.value % TICKET_PRICE == 0, "Amount is not a multiple of ticket price");
-
+    function buy() public payable {
+        require(
+            msg.value % TICKET_PRICE == 0,
+            "Amount is not a multiple of ticket price"
+        );
+        current_block = block.number;
         // if previous round is ended , create a new one
         if (block.number > rounds[round].endBlock) {
             round++;
             rounds[round].endBlock = block.number + duration;
             rounds[round].drawBlock = block.number + duration + 5;
+            
         }
 
         uint256 quantity = msg.value / TICKET_PRICE;
@@ -49,32 +54,32 @@ contract RecLottery {
         rounds[round].entries.push(entry);
         rounds[round].totalQuantity += quantity;
 
+        // Increment the number of tickets bought by the sender in the current round
+        ticketsBoughtPerRound[round][msg.sender] += quantity;
     }
 
-    function drawWinner (uint256 roundNumber) public {
+    function drawWinner(uint256 roundNumber) public {
         Round storage drawing = rounds[roundNumber];
         require(drawing.winner == address(0), "Round already drawn");
-        require(block.number > drawing.drawBlock && drawing.drawBlock > 0, "Round not ended");
+        require(
+            block.number > drawing.drawBlock && drawing.drawBlock > 0,
+            "Round not ended"
+        );
         require(drawing.entries.length > 0, "No participants");
 
-        // PICK A RANDOM NUMBER VIA CHAINLINK VRF
-        uint256 randomNumber = 4; // TO BE REPLACED
+        // PICK A random number
 
-        // PICK THE WINNER
-        uint256 winnerIndex = randomNumber % drawing.totalQuantity;
-
-        for (uint256 i = 0; i < drawing.entries.length; i++) {
-            uint256 quantity = drawing.entries[i].quantity;
-            if (quantity > winnerIndex) {
+        // pick winner
+        bytes32 rand = keccak256(abi.encodePacked(blockhash(drawing.drawBlock)));
+        uint counter = uint(rand) % drawing.totalQuantity;
+        for (uint i = 0; i < drawing.entries.length; i++) {
+            uint quantity = drawing.entries[i].quantity;
+            if (quantity > counter) {
                 drawing.winner = drawing.entries[i].buyer;
                 break;
-            } else {
-                winnerIndex -= quantity;
-            }
+            } else counter -= quantity;
         }
-
-        balances[drawing.winner] += TICKET_PRICE * drawing.totalQuantity; 
-
+        balances[drawing.winner] += TICKET_PRICE * drawing.totalQuantity;
     }
 
     function withdraw() public {
@@ -83,15 +88,22 @@ contract RecLottery {
         payable(msg.sender).transfer(amount);
     }
 
-    function getEntries(uint256 roundNumber) public view returns (Entry[] memory) {
+    function getEntries(
+        uint256 roundNumber
+    ) public view returns (Entry[] memory) {
         return rounds[roundNumber].entries;
     }
 
+    function getEntriesByRound(uint256 roundNumber) public view returns (uint256) {
+        return ticketsBoughtPerRound[roundNumber][msg.sender];
+    }
+
     function deleteRound(uint256 roundNumber) public {
-        require(block.number > rounds[roundNumber].drawBlock + 100, "Round not ended");
+        require(
+            block.number > rounds[roundNumber].drawBlock + 100,
+            "Round not ended"
+        );
         require(rounds[roundNumber].winner != address(0), "Round not drawn");
         delete rounds[roundNumber];
     }
-
-
 }
