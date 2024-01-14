@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-contract RecLottery {
+contract LottaLottery {
     //round struct
 
     struct Round {
@@ -24,8 +24,7 @@ contract RecLottery {
     uint256 public round;
     uint256 public duration;
     mapping(address => uint256) public balances;
-    mapping(uint256 => mapping(address => uint256)) public ticketsBoughtPerRound;
-    uint256 public current_block;
+    mapping(uint256 => mapping(address => uint256)) public tickets_bought_per_round;
 
     //duration is in blocks. 1 day = ~40000 blocks in Polygon
     constructor(uint256 _duration) {
@@ -35,18 +34,22 @@ contract RecLottery {
         rounds[round].drawBlock = block.number + duration + 5;
     }
 
-    function buy() public payable {
+    function buy_ticket() public payable {
         require(
             msg.value % TICKET_PRICE == 0,
             "Amount is not a multiple of ticket price"
         );
-        current_block = block.number;
+        require(msg.value >= TICKET_PRICE, "Amount is less than ticket price");
+
+
+        
         // if previous round is ended , create a new one
         if (block.number > rounds[round].endBlock) {
+
             round++;
             rounds[round].endBlock = block.number + duration;
             rounds[round].drawBlock = block.number + duration + 5;
-            
+
         }
 
         uint256 quantity = msg.value / TICKET_PRICE;
@@ -58,7 +61,7 @@ contract RecLottery {
         ticketsBoughtPerRound[round][msg.sender] += quantity;
     }
 
-    function drawWinner(uint256 roundNumber) public {
+    function draw_winner(uint256 roundNumber) public {
         Round storage drawing = rounds[roundNumber];
         require(drawing.winner == address(0), "Round already drawn");
         require(
@@ -88,17 +91,17 @@ contract RecLottery {
         payable(msg.sender).transfer(amount);
     }
 
-    function getEntries(
+    function get_entries(
         uint256 roundNumber
     ) public view returns (Entry[] memory) {
         return rounds[roundNumber].entries;
     }
 
-    function getEntriesByRound(uint256 roundNumber) public view returns (uint256) {
+    function get_entries_by_round(uint256 roundNumber) public view returns (uint256) {
         return ticketsBoughtPerRound[roundNumber][msg.sender];
     }
 
-    function deleteRound(uint256 roundNumber) public {
+    function delete_round(uint256 roundNumber) public {
         require(
             block.number > rounds[roundNumber].drawBlock + 100,
             "Round not ended"
