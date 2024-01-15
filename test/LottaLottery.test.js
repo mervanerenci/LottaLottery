@@ -8,7 +8,7 @@ describe("LottaLottery", function () {
     LottaLottery = await ethers.getContractFactory("LottaLottery");
     [owner, addr1, addr2, _] = await ethers.getSigners();
     lottaLottery = await LottaLottery.deploy(100);
-    
+
   });
 
   describe("buy_ticket", function () {
@@ -17,11 +17,11 @@ describe("LottaLottery", function () {
       await expect(lottaLottery.connect(addr1).buy_ticket({ value: ethers.parseEther("0") })).to.be.revertedWith("Amount is less than ticket price");
     });
 
-    
+
 
     it("Should not allow to buy tickets after the r ound has ended, it should buy ticket for the next round", async function () {
       // Assuming a round lasts 100 blocks
-      for(let i = 0; i < 101; i++) {
+      for (let i = 0; i < 101; i++) {
         await ethers.provider.send("evm_mine");
       }
       await lottaLottery.connect(addr1).buy_ticket({ value: ethers.parseEther("1") });
@@ -53,7 +53,7 @@ describe("LottaLottery", function () {
       // Buy a ticket for addr1
       await lottaLottery.connect(addr1).buy_ticket({ value: ethers.parseEther('1') });
       // Assuming a round lasts 100 blocks
-      for(let i = 0; i < 111; i++) {
+      for (let i = 0; i < 111; i++) {
         await ethers.provider.send("evm_mine");
       }
       // Assuming that the round has ended
@@ -61,12 +61,12 @@ describe("LottaLottery", function () {
 
       // Check if the balance of the winner has increased on contract balances using get_balance() function
       // Check if the balance of the winner has increased on contract balances using get_balance() function
-  const balance = await lottaLottery.connect(addr1).get_balance();
-  expect(balance).to.be.gt(0);
+      const balance = await lottaLottery.connect(addr1).get_balance();
+      expect(balance).to.be.gt(0);
 
 
 
-      
+
 
     });
   });
