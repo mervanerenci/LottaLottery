@@ -86,9 +86,18 @@ contract LottaLottery {
     }
 
     function withdraw() public {
+
         uint256 amount = balances[msg.sender];
         balances[msg.sender] = 0;
         payable(msg.sender).transfer(amount);
+    }
+
+    function get_round() public view returns (Round memory) {
+        return rounds[round];
+    }
+
+    function get_current_round() public view returns (uint256) {
+        return round;
     }
 
     function get_entries(
@@ -99,6 +108,10 @@ contract LottaLottery {
 
     function get_entries_by_round(uint256 roundNumber) public view returns (uint256) {
         return tickets_bought_per_round[roundNumber][msg.sender];
+    }
+
+    function get_balance() public view returns (uint256) {
+        return balances[msg.sender];
     }
 
     function delete_round(uint256 roundNumber) public {
